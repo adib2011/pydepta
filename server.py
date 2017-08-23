@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-#from dsc_depta.depta import *
-from past import autotranslate
-autotranslate('pydepta')
-
-from urllib.parse import quote
 from urllib.request import urlopen, Request
 from w3lib.encoding import html_to_unicode
-from jinja2 import Template
+# from jinja2 import Template
 
 from pydepta.mdr import MiningDataRegion, MiningDataRecord, MiningDataField
 from pydepta.htmls import DomTreeBuilder
+from lxml import etree
 
 from flask import Flask, request
 app = Flask(__name__)
@@ -27,7 +23,9 @@ def transpose(xss):
 
 def fetch_url(url):
     info = urlopen(Request(url, headers={
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) \
+        AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 \
+        Safari/537.36'
     }))
     _, html = html_to_unicode(info.headers.get('content_type'), info.read())
     return html
@@ -140,5 +138,6 @@ def depta():
         return process_url(url)
     else:
         return show_home()
+
 
 app.run(host='localhost', port=8888)
