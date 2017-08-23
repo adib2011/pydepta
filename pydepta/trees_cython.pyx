@@ -9,6 +9,8 @@ def _get_child(e, i):
 def _get_children_count(e):
     return len(e)
 
+# inner loop from hell!
+# recusive calls from 4-deep inner loop
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def tree_match(t1, t2):
@@ -28,7 +30,9 @@ def tree_match(t1, t2):
     for i from 1 <= i < rows:
         for j from 1 <= j < cols:
             m[i][j] = max(m[i][j - 1], m[i - 1][j])
-            m[i][j] = max(m[i][j], m[i - 1][j - 1] + tree_match(_get_child(t1, i - 1), _get_child(t2, j - 1)))
+            m[i][j] = max(m[i][j],
+                          m[i - 1][j - 1] + tree_match(_get_child(t1, i - 1),
+                                                       _get_child(t2, j - 1)))
 
     return 1 + m[rows-1][cols-1]
 
