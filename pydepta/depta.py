@@ -1,9 +1,11 @@
 import six
 from six.moves.urllib.request import urlopen
-from scrapely import HtmlPage, Scraper, TemplateMaker, best_match, InstanceBasedLearningExtractor
+from scrapely import (HtmlPage, Scraper, TemplateMaker, best_match,
+                      InstanceBasedLearningExtractor)
 from lxml.html import tostring
-from scrapely.extraction.regionextract import (RecordExtractor, BasicTypeExtractor, TemplatePageExtractor, \
-                                               TraceExtractor, labelled_element, attrs2dict)
+from scrapely.extraction.regionextract import (
+    RecordExtractor, BasicTypeExtractor, TemplatePageExtractor,
+    TraceExtractor, labelled_element, attrs2dict)
 from scrapely.extraction.similarity import first_longest_subsequence
 from scrapely.template import FragmentNotFound, FragmentAlreadyAnnotated
 from w3lib.encoding import html_to_unicode
@@ -14,15 +16,18 @@ from .mdr import MiningDataRegion, MiningDataRecord, MiningDataField
 if six.PY3:
     unicode = str
 
+
 class DeptaTemplateMaker(TemplateMaker):
 
     def annotate(self, field, score_func, best_match=False):
-        """Annotate a field, but unlike TemplateMaker, it simply try next match field if need.
+        """Annotate a field, but unlike TemplateMaker,
+        it simply try next match field if need.
         """
         indexes = self.select(score_func)
         if not indexes:
-            raise FragmentNotFound("Fragment not found annotating %r using: %s" %
-                                   (field, score_func))
+            raise FragmentNotFound(
+                "Fragment not found annotating %r using: %s" %
+                (field, score_func))
         if best_match:
             del indexes[1:]
         for i in indexes:
@@ -32,6 +37,7 @@ class DeptaTemplateMaker(TemplateMaker):
             except FragmentAlreadyAnnotated:
                 pass
 
+
 class DeptaExtractor(RecordExtractor):
     """
     A simple RecordExtractor variant to handle the tabulated data.
@@ -40,12 +46,14 @@ class DeptaExtractor(RecordExtractor):
         super(DeptaExtractor, self).__init__(extractors, template_tokens)
         self.best_match = first_longest_subsequence
 
-    def extract(self, page, start_index=0, end_index=None, ignored_regions=None, **kwargs):
+    def extract(self, page, start_index=0, end_index=None,
+                ignored_regions=None, **kwargs):
         if ignored_regions is None:
             ignored_regions = []
-        region_elements = sorted(self.extractors + ignored_regions, key=lambda x: labelled_element(x).start_index)
-        pindex, sindex, attributes = self._doextract(page, region_elements, start_index,
-                                           end_index, **kwargs)
+        region_elements = sorted(self.extractors + ignored_regions,
+                                 key=lambda x: labelled_element(x).start_index)
+        pindex, sindex, attributes = self._doextract(
+            page, region_elements, start_index, end_index, **kwargs)
 
         if not end_index:
             end_index = len(page.page_tokens)
@@ -60,11 +68,13 @@ class DeptaExtractor(RecordExtractor):
 
             # if there are remaining items, extract recursively backward
             if sindex and sindex < end_index:
-                r.extend(self.extract(page, 0, pindex - 1, ignored_regions, **kwargs))
+                r.extend(self.extract(page, 0, pindex - 1, ignored_regions,
+                                      **kwargs))
         return r
 
     def __repr__(self):
         return str(self)
+
 
 class DeptaIBLExtractor(InstanceBasedLearningExtractor):
 
@@ -72,8 +82,10 @@ class DeptaIBLExtractor(InstanceBasedLearningExtractor):
         """Build a tree of region extractors corresponding to the
         template
         """
-        attribute_map = type_descriptor.attribute_map if type_descriptor else None
-        extractors = BasicTypeExtractor.create(template.annotations, attribute_map)
+        attribute_map = (type_descriptor.attribute_map if type_descriptor
+                         else None)
+        extractors = BasicTypeExtractor.create(template.annotations,
+                                               attribute_map)
         if trace:
             extractors = TraceExtractor.apply(template, extractors)
         for cls in (DeptaExtractor,):
@@ -84,10 +96,12 @@ class DeptaIBLExtractor(InstanceBasedLearningExtractor):
         return TemplatePageExtractor(template, extractors)
 
     def extract(self, html, pref_template_id=None):
-        extracted, template = super(DeptaIBLExtractor, self).extract(html, pref_template_id)
+        extracted, template = super(DeptaIBLExtractor,
+                                    self).extract(html, pref_template_id)
         if extracted:
             return extracted[::-1], template
         return None, None
+
 
 class Depta(object):
     def __init__(self, threshold=0.75, k=5):
@@ -101,7 +115,8 @@ class Depta(object):
         """
         if not html and 'url' in kwargs:
             info = urlopen(kwargs.pop('url'))
-            _, html = html_to_unicode(info.headers.get('content_type'), info.read())
+            _, html = html_to_unicode(info.headers.get('content_type'),
+                                      info.read())
 
         builder = DomTreeBuilder(html)
         root = builder.build()
@@ -119,7 +134,7 @@ class Depta(object):
             if 'verbose' in kwargs:
                 print(region)
                 for record in records:
-                    print ('\t', record)
+                    print('\t', record)
 
         return regions
 
@@ -142,14 +157,15 @@ class Depta(object):
                 dtm.annotate(field, best_match(value))
         self.scraper.add_template(dtm.get_template())
 
-
     def infer(self, html='', **kwargs):
         """
-        extract data with seed region and the data you expect to scrape from there.
+        extract data with seed region andthe data you expect to scrape from
+        there.
         """
         if 'url' in kwargs:
             info = urlopen(kwargs.pop('url'))
-            _, html = html_to_unicode(info.headers.get('content_type'), info.read())
+            _, html = html_to_unicode(info.headers.get('content_type'),
+                                      info.read())
 
         builder = DomTreeBuilder(html)
         doc = builder.build()
@@ -159,11 +175,13 @@ class Depta(object):
 
     def _scrape_page(self, page):
         if self.scraper._ex is None:
-            self.scraper._ex = DeptaIBLExtractor((t, None) for t in
-                self.scraper._templates)
+            self.scraper._ex = DeptaIBLExtractor(
+                (t, None)
+                for t in self.scraper._templates)
         return self.scraper._ex.extract(page)[0]
 
     def _region_to_htmlpage(self, region):
-        seed_body = tostring(region.parent[region.start], encoding=unicode, method='html')
+        seed_body = tostring(region.parent[region.start],
+                             encoding=unicode,
+                             method='html')
         return HtmlPage(body=seed_body)
-

@@ -6,7 +6,8 @@ import copy
 from io import StringIO
 from lxml import etree
 from lxml.html import tostring, fragment_fromstring
-from .trees import SimpleTreeMatch, tree_depth, PartialTreeAligner, SimpleTreeAligner, tree_size
+from .trees import (SimpleTreeMatch, tree_depth, PartialTreeAligner,
+                    SimpleTreeAligner, tree_size)
 
 if six.PY3:
     unicode = str
@@ -14,8 +15,10 @@ if six.PY3:
 GeneralizedNode = namedtuple('GeneralizedNode', ['element', 'length'])
 Field = namedtuple('Field', ['text', 'html'])
 
+
 def element_repr(e):
-    return '<%s #%s .%s>' %(e.tag, e.get('class', ''), e.get('id', ''))
+    return '<%s #%s .%s>' % (e.tag, e.get('class', ''), e.get('id', ''))
+
 
 def region_to_dict(region):
     return {
@@ -26,28 +29,35 @@ def region_to_dict(region):
         'items': region.items
     }
 
+
 def dict_to_region(json_region):
     parser = etree.HTMLParser(encoding='utf-8')
     parent = fragment_fromstring(json_region['parent'], parser=parser)
-    return Region(parent=parent, start=json_region['start'], k=json_region['k'],
+    return Region(parent=parent,
+                  start=json_region['start'],
+                  k=json_region['k'],
                   covered=json_region['covered'],
                   items=json_region['items'])
+
 
 class Region(object):
     def __init__(self, **dict):
         self.__dict__.update(dict)
 
     def __str__(self):
-        return "<Region: parent {}, start {}:{}, k {}, covered {}>".format(element_repr(self.parent),
-                                                                                     self.start,
-                                                                                     element_repr(self.parent[self.start]),
-                                                                                     self.k,
-                                                                                     self.covered)
+        return ("<Region: parent {}, start {}:{}, k {}, covered {}>"
+                .format(element_repr(self.parent),
+                        self.start,
+                        element_repr(self.parent[self.start]),
+                        self.k,
+                        self.covered))
     __repr__ = __str__
 
     def __getstate__(self):
         odict = self.__dict__.copy()
-        odict['parent'] = tostring(odict['parent'], encoding=unicode, method='html')
+        odict['parent'] = tostring(odict['parent'],
+                                   encoding=unicode,
+                                   method='html')
         odict['start'] = odict['start']
         odict['k'] = odict['k']
         odict['covered'] = odict['covered']
@@ -96,21 +106,21 @@ class Region(object):
                 if show_id:
                     print >> f, '<th></th>'
                 for i in range(len(self.items[0])):
-                    print >> f, '<th>%s</th>' %headers.get(i, '')
+                    print >> f, '<th>%s</th>' % headers.get(i, '')
             elif isinstance(headers, list):
                 if show_id:
                     print >> f, '<th></th>'
                 for h in headers:
-                    print >> f, '<th>%s</th>' %h
+                    print >> f, '<th>%s</th>' % h
             print >> f, '</tr>'
 
         # print content
         for i, item in enumerate(self.items):
             print >> f, '<tr>'
             if show_id:
-                print >> f, '<td>%s</td>' %(i+1)
+                print >> f, '<td>%s</td>' % (i+1)
             for field in item:
-                print >> f, '<td>%s</td>' %field[0].encode('utf8', 'ignore')
+                print >> f, '<td>%s</td>' % field[0].encode('utf8', 'ignore')
             print >> f, '</tr>'
         print >> f, '</table>'
 
@@ -122,6 +132,7 @@ class Region(object):
         """
         return [[field[0] for field in item] for item in self.items]
 
+
 class Record(object):
     def __init__(self, *elements):
         self.elements = elements
@@ -130,7 +141,8 @@ class Record(object):
         return len(self.elements)
 
     def __str__(self):
-        return 'DataRecord: %s' % ", ".join(element_repr(e) for e in self.elements)
+        return 'DataRecord: %s' % ", ".join(
+            element_repr(e) for e in self.elements)
 
     def __iter__(self):
         return iter(self.elements)
@@ -145,6 +157,7 @@ class Record(object):
             s += tree_size(element)
         return s
 
+
 def pairwise(a, K, start=0):
     """
     A generator to return the comparison pair.
@@ -153,11 +166,23 @@ def pairwise(a, K, start=0):
     >>> list(pairwise([1, 2, 3, 4], 1))
     [([1], [2]), ([2], [3]), ([3], [4])]
     >>> list(pairwise([1, 2, 3, 4], 2))
-    [([1], [2]), ([2], [3]), ([3], [4]), ([2], [3]), ([3], [4]), ([1, 2], [3, 4])]
+    [([1], [2]), ([2], [3]), ([3], [4]), ([2], [3]), ([3], [4]), \
+     ([1, 2], [3, 4])]
     >>> list(pairwise([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2))
-    [([1], [2]), ([2], [3]), ([3], [4]), ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), ([9], [10]), ([2], [3]), ([3], [4]), ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), ([9], [10]), ([1, 2], [3, 4]), ([3, 4], [5, 6]), ([5, 6], [7, 8]), ([7, 8], [9, 10]), ([2, 3], [4, 5]), ([4, 5], [6, 7]), ([6, 7], [8, 9])]
+    [([1], [2]), ([2], [3]), ([3], [4]), ([4], [5]), ([5], [6]), ([6], [7]), \
+     ([7], [8]), ([8], [9]), ([9], [10]), ([2], [3]), ([3], [4]), \
+     ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), \
+     ([9], [10]), ([1, 2], [3, 4]), ([3, 4], [5, 6]), ([5, 6], [7, 8]), \
+     ([7, 8], [9, 10]), ([2, 3], [4, 5]), ([4, 5], [6, 7]), ([6, 7], [8, 9])]
     >>> list(pairwise([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 1))
-    [([2], [3]), ([3], [4]), ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), ([9], [10]), ([3], [4]), ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), ([9], [10]), ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), ([9], [10]), ([2, 3], [4, 5]), ([4, 5], [6, 7]), ([6, 7], [8, 9]), ([3, 4], [5, 6]), ([5, 6], [7, 8]), ([7, 8], [9, 10]), ([4, 5], [6, 7]), ([6, 7], [8, 9]), ([2, 3, 4], [5, 6, 7]), ([5, 6, 7], [8, 9, 10]), ([3, 4, 5], [6, 7, 8]), ([4, 5, 6], [7, 8, 9])]
+    [([2], [3]), ([3], [4]), ([4], [5]), ([5], [6]), ([6], [7]), \
+     ([7], [8]), ([8], [9]), ([9], [10]), ([3], [4]), ([4], [5]), \
+     ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), ([9], [10]), \
+     ([4], [5]), ([5], [6]), ([6], [7]), ([7], [8]), ([8], [9]), \
+     ([9], [10]), ([2, 3], [4, 5]), ([4, 5], [6, 7]), ([6, 7], [8, 9]), \
+     ([3, 4], [5, 6]), ([5, 6], [7, 8]), ([7, 8], [9, 10]), \
+     ([4, 5], [6, 7]), ([6, 7], [8, 9]), ([2, 3, 4], [5, 6, 7]), \
+     ([5, 6, 7], [8, 9, 10]), ([3, 4, 5], [6, 7, 8]), ([4, 5, 6], [7, 8, 9])]
     """
     for k in xrange(1, K + 1):
         for i in xrange(0, K):
@@ -167,6 +192,7 @@ def pairwise(a, K, start=0):
 
                 if len(slice_a) >= k and len(slice_b) >= k:
                     yield slice_a, slice_b
+
 
 class MiningDataRegion(object):
     def __init__(self, root, max_generalized_nodes, threshold):
@@ -178,8 +204,10 @@ class MiningDataRegion(object):
     def find_regions(self, root):
         data_regions = []
         if tree_depth(root) >= 2:
-            scores = self.compare_generalized_nodes(root, self.max_generalized_nodes)
-            data_regions.extend(self.identify_regions(0, root, self.max_generalized_nodes, self.threshold, scores))
+            scores = self.compare_generalized_nodes(
+                root, self.max_generalized_nodes)
+            data_regions.extend(self.identify_regions(
+                0, root, self.max_generalized_nodes, self.threshold, scores))
             covered = set()
             for data_region in data_regions:
                 for i in xrange(data_region.start, data_region.covered):
@@ -190,8 +218,8 @@ class MiningDataRegion(object):
                     data_regions.extend(self.find_regions(child))
         return data_regions
 
-
-    def identify_regions(self, start, root, max_generalized_nodes, threshold, scores):
+    def identify_regions(self, start, root, max_generalized_nodes, threshold,
+                         scores):
         cur_region = Region(parent=root, start=0, k=0, covered=0, score=0)
         max_region = Region(parent=root, start=0, k=0, covered=0, score=0)
         data_regions = []
@@ -200,7 +228,8 @@ class MiningDataRegion(object):
             for i in xrange(0, max_generalized_nodes):
                 flag = True
                 for j in xrange(start + i, len(root) - k, k):
-                    pair = GeneralizedNode(root[j], k), GeneralizedNode(root[j + k], k)
+                    pair = (GeneralizedNode(root[j], k),
+                            GeneralizedNode(root[j + k], k))
                     # Note Johannes: I was getting "Unorderable None >= float"
                     #   in python 2.x "None >= thresh" yields False, while
                     #   in python 3.x it's illegal
@@ -221,7 +250,8 @@ class MiningDataRegion(object):
                     elif not flag:  # doesn't match but previous match
                         break
 
-                if self.calculate_score(cur_region) > self.calculate_score(max_region):
+                if (self.calculate_score(cur_region) >
+                        self.calculate_score(max_region)):
                     max_region.k = cur_region.k
                     max_region.start = cur_region.start
                     max_region.covered = cur_region.covered
@@ -230,15 +260,19 @@ class MiningDataRegion(object):
         if max_region.covered:
             data_regions.append(max_region)
             if max_region.start + max_region.covered < len(max_region.parent):
-                data_regions.extend(self.identify_regions(max_region.start + max_region.covered, root,
-                                                          max_generalized_nodes, threshold, scores))
+                data_regions.extend(self.identify_regions(
+                    max_region.start + max_region.covered,
+                    root,
+                    max_generalized_nodes,
+                    threshold,
+                    scores))
 
         return data_regions
 
-
     def compare_generalized_nodes(self, parent, k):
         """
-         compare the adjacent children generalized nodes similarity of a given element
+         compare the adjacent children generalized nodes similarity of a given
+         element
 
          Arguments:
          `parent`: the lxml element to compare children of.
@@ -259,14 +293,15 @@ class MiningDataRegion(object):
         count = region.covered / region.k
         return region.score / count
 
+
 class MiningDataRecord(object):
     """
     mining the data record from a region.
 
     basic assumption:
-    the subtree of data records also similar. so if not any adjacent pair of them are
-    similar (less than threshold), data region itself is a data record,
-    otherwise children are individual data record.
+    the subtree of data records also similar. so if not any adjacent pair of
+    them are similar (less than threshold), data region itself is a data
+    record, otherwise children are individual data record.
     """
 
     def __init__(self, threshold):
@@ -276,7 +311,8 @@ class MiningDataRecord(object):
     def find_records(self, region):
         if region.k == 1:
             records = []
-            # if all the individual node of children node of Generalized node are similar
+            # if all the individual node of children node
+            #   of Generalized node are similar
             for i in xrange(region.start, region.start + region.covered):
                 for child1, child2 in pairwise(region.parent[i], 1, 0):
                     sim = self.stm.normalized_match_score(child1, child2)
@@ -289,13 +325,19 @@ class MiningDataRecord(object):
             return records
         else:
             # if almost all the individual node in Generalized Node are similar
-            children = [region.parent[region.start + i] for i in range(region.covered)]
+            children = [region.parent[region.start + i]
+                        for i in range(region.covered)]
             sizes = Counter([tree_size(child) for child in children])
-            most_common_size, _= sizes.most_common(1)[0]
-            most_typical_child = [child for child in children if tree_size(child) == most_common_size][0]
-            similarities = dict([child, self.stm.normalized_match_score([most_typical_child], [child])] for child in children)
+            most_common_size, _ = sizes.most_common(1)[0]
+            most_typical_child = [child for child in children
+                                  if tree_size(child) == most_common_size][0]
+            similarities = dict([
+                child,
+                self.stm.normalized_match_score([most_typical_child], [child])]
+                for child in children)
             if self.almost_similar(similarities.values(), self.threshold):
-                return [Record(child) for child in children if similarities[child] >= self.threshold]
+                return [Record(child) for child in children
+                        if similarities[child] >= self.threshold]
             else:
                 return self.slice_region(region)
 
@@ -313,6 +355,7 @@ class MiningDataRecord(object):
         sims = [1 for sim in similarities if sim >= threshold]
         return len(sims) / len(similarities) > 0.8
 
+
 class MiningDataField(object):
     """
     Mining the data item from data records with partial tree alignment.
@@ -324,11 +367,15 @@ class MiningDataField(object):
     def align_records(self, records):
         """partial align multiple records.
 
-        for example (from paper Web Data Extraction Based on Partial Tree Alignment):
+        for example
+        (from paper Web Data Extraction Based on Partial TreeAlignment):
         >>> from lxml.html import fragment_fromstring
-        >>> t1 = fragment_fromstring("<p> <x1></x1> <x2></x2> <x3></x3> <x></x> <b></b> <d></d> </p>")
-        >>> t2 = fragment_fromstring("<p> <b></b> <n></n> <c></c> <k></k> <g></g> </p>")
-        >>> t3 = fragment_fromstring("<p> <b></b> <c></c> <d></d> <h></h> <k></k> </p>")
+        >>> t1 = fragment_fromstring("<p> <x1></x1> <x2></x2> <x3></x3> \
+                                     <x></x> <b></b> <d></d> </p>")
+        >>> t2 = fragment_fromstring("<p> <b></b> <n></n> <c></c> <k></k> \
+                                     <g></g> </p>")
+        >>> t3 = fragment_fromstring("<p> <b></b> <c></c> <d></d> <h></h> \
+                                     <k></k> </p>")
         >>> mdf = MiningDataField()
         >>> _, seed = mdf.align_records([Record(t1), Record(t2), Record(t3)])
         >>> [e.tag for e in seed[0]]
@@ -442,9 +489,8 @@ class MiningDataField(object):
         return r
 
     def _get_text(self, text):
-        if text != None:
+        if text is not None:
             if not isinstance(text, unicode):
                 return text.decode('utf8', 'ignore')
             return text
         return u''
-
