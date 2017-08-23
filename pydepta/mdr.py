@@ -22,7 +22,7 @@ def region_to_dict(region):
     }
 
 def dict_to_region(json_region):
-    parser = etree.HTMLParser(encoding='unicode')
+    parser = etree.HTMLParser(encoding='utf-8')
     parent = fragment_fromstring(json_region['parent'], parser=parser)
     return Region(parent=parent, start=json_region['start'], k=json_region['k'],
                   covered=json_region['covered'],
@@ -50,7 +50,7 @@ class Region(object):
         return odict
 
     def __setstate__(self, dict):
-        parser = etree.HTMLParser(encoding='unicode')
+        parser = etree.HTMLParser(encoding='utf-8')
         dict['parent'] = fragment_fromstring(dict['parent'], parser=parser)
         dict['start'] = dict['start']
         dict['k'] = dict['k']
