@@ -70,6 +70,7 @@ class SimpleTreeMatch(object):
         self.get_children_count = get_children_count
         self.get_child = get_child
 
+    # FIXME: why is "match" not implemented in cython? numpy?
     def match(self, l1, l2):
         """
         match two trees list.
@@ -78,7 +79,9 @@ class SimpleTreeMatch(object):
         for i in xrange(1, len(matrix)):
             for j in xrange(1, len(matrix[0])):
                 matrix[i][j] = max(matrix[i][j - 1], matrix[i - 1][j])
-                matrix[i][j] = max(matrix[i][j], matrix[i - 1][j - 1] + self._single_match(l1[i - 1], l2[j - 1]))
+                matrix[i][j] = max(matrix[i][j], matrix[i - 1][j - 1] +
+                                   # self._single_match
+                                   tree_match(l1[i - 1], l2[j - 1]))
         return matrix[i][j]
 
     def normalized_match_score(self, t1, t2):
@@ -86,8 +89,11 @@ class SimpleTreeMatch(object):
         t2size = sum([tree_size(e) for e in t2]) + 1
         return self.match(t1, t2) / ((t1size + t2size) / 2)
 
+    '''
     def _single_match(self, t1, t2):
         return tree_match(t1, t2)
+    '''
+
 
 class TreeAlignment(object):
 

@@ -1,3 +1,6 @@
 lxml
 w3lib
 scrapely
+flask
+flake8
+future
