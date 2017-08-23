@@ -1,4 +1,5 @@
-from urllib import urlopen
+import six
+from six.moves.urllib.request import urlopen
 from scrapely import HtmlPage, Scraper, TemplateMaker, best_match, InstanceBasedLearningExtractor
 from lxml.html import tostring
 from scrapely.extraction.regionextract import (RecordExtractor, BasicTypeExtractor, TemplatePageExtractor, \
@@ -9,6 +10,9 @@ from w3lib.encoding import html_to_unicode
 
 from .htmls import DomTreeBuilder
 from .mdr import MiningDataRegion, MiningDataRecord, MiningDataField
+
+if six.PY3:
+    unicode = str
 
 class DeptaTemplateMaker(TemplateMaker):
 
@@ -113,9 +117,9 @@ class Depta(object):
             items, _ = field_finder.align_records(records)
             region.items = items
             if 'verbose' in kwargs:
-                print region
+                print(region)
                 for record in records:
-                    print '\t', record
+                    print ('\t', record)
 
         return regions
 
@@ -133,7 +137,7 @@ class Depta(object):
             if not hasattr(values, '__iter__'):
                 values = [values]
             for value in values:
-                if isinstance(value, str):
+                if not isinstance(value, unicode):
                     value = value.decode(htmlpage.encoding or 'utf-8')
                 dtm.annotate(field, best_match(value))
         self.scraper.add_template(dtm.get_template())

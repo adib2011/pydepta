@@ -1,10 +1,15 @@
 from __future__ import division
+import six
+from past.builtins import xrange
 from collections import namedtuple, defaultdict, Counter
 import copy
-from cStringIO import StringIO
+from io import StringIO
 from lxml import etree
 from lxml.html import tostring, fragment_fromstring
 from .trees import SimpleTreeMatch, tree_depth, PartialTreeAligner, SimpleTreeAligner, tree_size
+
+if six.PY3:
+    unicode = str
 
 GeneralizedNode = namedtuple('GeneralizedNode', ['element', 'length'])
 Field = namedtuple('Field', ['text', 'html'])

@@ -65,7 +65,7 @@ def _normalize_text(text):
 def _merge_list_of_dict(items):
     d = {}
     for item in items:
-        for k, v in item.iteritems():
+        for k, v in item.items():
             d.setdefault(k, []).append(_normalize_text(v[0].text_content))
     return d
 
@@ -97,7 +97,7 @@ class DeptaTest(unittest.TestCase):
             texts = self._get_texts(fn)
             regions = d.extract(body)
 
-            for k, vs in case.iteritems():
+            for k, vs in case.items():
                 if 'region-index' in case:
                     region_index = case['region-index']
                     self.assertEquals(self._normalize_region_text(
