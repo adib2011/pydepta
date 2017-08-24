@@ -1,6 +1,7 @@
 from __future__ import division
 import copy
 from past.builtins import xrange
+import numpy as np
 
 from .trees_cython import create_2d_matrix, tree_match
 
@@ -80,26 +81,27 @@ class SimpleTreeMatch(object):
         self.get_children_count = get_children_count
         self.get_child = get_child
 
-    # FIXME: why is "match" not implemented in cython? numpy?
     def match(self, l1, l2):
         """
         match two trees list.
         """
-        matrix = create_2d_matrix(len(l1) + 1, len(l2) + 1)
-        for i in xrange(1, len(matrix)):
-            for j in xrange(1, len(matrix[0])):
-                matrix[i][j] = max(matrix[i][j - 1], matrix[i - 1][j])
-                matrix[i][j] = max(matrix[i][j], matrix[i - 1][j - 1] +
-                                   tree_match(l1[i - 1], l2[j - 1]))
-        return matrix[i][j]
+        rows = len(l1) + 1
+        cols = len(l2) + 1
+        m = np.zeros((rows, cols), dtype=int)
+        for i in range(1, rows):
+            for j in range(1, cols):
+                m[i, j] = max(
+                    m[i, j - 1],
+                    m[i - 1, j],
+                    m[i - 1, j - 1] + tree_match(_get_child(l1, i - 1),
+                                                 _get_child(l2, j - 1)))
+        return m[rows-1, cols-1]
 
     def normalized_match_score(self, t1, t2):
-        t1size = sum([tree_size(e) for e in t1]) + 1
-        t2size = sum([tree_size(e) for e in t2]) + 1
+        t1size = tree_size(t1)
+        t2size = tree_size(t2)
+        # print('t1_len
         return self.match(t1, t2) / ((t1size + t2size) / 2)
-
-    def _single_match(self, t1, t2):
-        return tree_match(t1, t2)
 
 
 class TreeAlignment(object):
@@ -265,9 +267,10 @@ class SimpleTreeAligner(object):
         3
 
         """
-        if self.get_root(t1) is None or self.get_root(t2) is None:
-            return TreeAlignment()
-        if self.get_root(t1) != self.get_root(t2):
+        try:
+            if t1.tag != t2.tag:
+                return TreeAlignment()
+        except NameError:
             return TreeAlignment()
 
         alignment = TreeAlignment(t1, t2)
