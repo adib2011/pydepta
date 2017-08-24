@@ -4,8 +4,7 @@ from urllib.request import urlopen, Request
 from w3lib.encoding import html_to_unicode
 # from jinja2 import Template
 
-from pydepta.mdr import MiningDataRegion, MiningDataRecord, MiningDataField
-from pydepta.htmls import DomTreeBuilder
+from pydepta.depta import Depta
 from lxml import etree
 
 from flask import Flask, request
@@ -92,38 +91,14 @@ def region_to_html(region, show_headers=False, show_html=False):
 
 def process_url(url):
     html = fetch_url(url=url)
-    regions = depta_extract(html)
+    depta = Depta()
+    regions = depta.extract(html)
     res = []
 
     for region in regions:
         res.append(region_to_html(region, show_headers=True, show_html=False))
 
     return """<br/><br/><h3>cells</h3>""".join(res)
-
-
-def depta_extract(html, threshold=0.75, k=5):
-    """
-    extract data fields/tables from html
-
-    copied from "github.com/scrapinghub/pydepta/blob/master/pydepta/depta.py"
-        to add access to records.
-    """
-    builder = DomTreeBuilder(html)
-    root = builder.build()
-
-    region_finder = MiningDataRegion(root, k, threshold)
-    regions = region_finder.find_regions(root)
-
-    record_finder = MiningDataRecord(threshold)
-    field_finder = MiningDataField()
-
-    for region in regions:
-        records = record_finder.find_records(region)
-        items, _ = field_finder.align_records(records)
-        region.items = items
-        region.records = records  # only change from original
-
-    return regions
 
 
 def show_home():

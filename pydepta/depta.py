@@ -131,6 +131,7 @@ class Depta(object):
             records = record_finder.find_records(region)
             items, _ = field_finder.align_records(records)
             region.items = items
+            region.records = records
             if 'verbose' in kwargs:
                 print(region)
                 for record in records:
